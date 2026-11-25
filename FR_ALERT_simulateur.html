@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur FR-Alert — Système National d'Alerte</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #2563eb;
+            --accent-red: #dc2626;
+            --accent-orange: #ea580c;
+            --accent-amber: #d97706;
+            --accent-emerald: #059669;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(90deg, #002395 0%, #0f172a 45%, #ed2939 100%);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rf-badge {
+            background: white;
+            color: #0f172a;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            border-left: 4px solid #002395;
+            border-right: 4px solid #ed2939;
+        }
+
+        .brand h1 {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .brand span {
+            font-size: 12px;
+            color: #cbd5e1;
+            display: block;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-header {
+            background: rgba(15, 23, 42, 0.85);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-header:hover {
+            background: #1e293b;
+            border-color: white;
+        }
+
+        .btn-back-config {
+            display: none;
+        }
+
+        .view-config {
+            max-width: 960px;
+            width: 100%;
+            margin: 24px auto;
+            padding: 0 20px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #93c5fd;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scenarios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .scenario-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            text-align: left;
+            color: var(--text-main);
+            transition: all 0.18s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .scenario-card:hover {
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+            background: #162238;
+        }
+
+        .scenario-card.active {
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.18);
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        .scenario-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 13.5px;
+        }
+
+        .scenario-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge-extreme { background: rgba(220, 38, 38, 0.25); color: #fca5a5; border: 1px solid #dc2626; }
+        .badge-grave { background: rgba(234, 88, 12, 0.25); color: #fdba74; border: 1px solid #ea580c; }
+        .badge-avis { background: rgba(217, 119, 6, 0.25); color: #fcd34d; border: 1px solid #d97706; }
+        .badge-exercice { background: rgba(5, 150, 105, 0.25); color: #6ee7b7; border: 1px solid #059669; }
+
+        .scenario-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        @media (max-width: 680px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #cbd5e1;
+        }
+
+        select, input[type="text"], textarea {
+            background: #0f172a;
+            border: 1px solid #475569;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="text"]:focus, textarea:focus {
+            border-color: #3b82f6;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 105px;
+            line-height: 1.45;
+        }
+
+        .launch-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .launch-options {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .silent-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .silent-toggle.is-silent {
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        .delay-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        .delay-wrapper span {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .delay-wrapper select {
+            border: none;
+            padding: 6px 4px;
+            font-weight: 700;
+            background: #0f172a;
+            color: white;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            border: none;
+            padding: 14px 26px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);
+            transition: transform 0.15s, box-shadow 0.15s;
+            flex-grow: 1;
+            max-width: 340px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6);
+        }
+
+        /* ÉCRAN À PROPOS (Style identique SAUV Life) */
+        .screen-about {
+            display: none;
+            max-width: 720px;
+            width: 100%;
+            margin: 24px auto;
+            padding: 0 20px 40px;
+            flex: 1;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .about-container {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .about-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 16px;
+        }
+
+        .about-icon-box {
+            padding: 8px;
+            background: #1e293b;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            color: #f87171;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .about-header h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .about-header p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .about-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .about-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .about-card h3.title-red {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #f87171;
+        }
+
+        .about-card h3.title-emerald {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #34d399;
+        }
+
+        .about-field-label {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .about-field-value-bold {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .about-field-value-semi {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .about-field-text {
+            font-size: 12.5px;
+            color: #cbd5e1;
+            line-height: 1.55;
+        }
+
+        .about-warning-card {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            padding: 14px;
+            font-size: 11.5px;
+            color: rgba(253, 230, 138, 0.92);
+            line-height: 1.55;
+        }
+
+        .btn-about-return {
+            width: 100%;
+            padding: 14px;
+            border-radius: 16px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            font-weight: 700;
+            font-size: 14px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn-about-return:hover {
+            background: #334155;
+        }
+
+        /* Smartphone View */
+        .view-phone {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .countdown-banner {
+            display: none;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-cancel-timer {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .phone-frame {
+            width: 375px;
+            max-width: 100%;
+            height: 750px;
+            max-height: 84vh;
+            background: #090d16;
+            border-radius: 44px;
+            border: 10px solid #1e293b;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), inset 0 0 0 2px #334155;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-frame.vibrating {
+            animation: phoneVibrate 0.28s infinite;
+        }
+
+        @keyframes phoneVibrate {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-3px, 1px) rotate(-0.6deg); }
+            50% { transform: translate(3px, -1px) rotate(0.6deg); }
+            75% { transform: translate(-2px, -1px) rotate(-0.4deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .phone-notch {
+            width: 135px;
+            height: 24px;
+            background: #090d16;
+            border-bottom-left-radius: 14px;
+            border-bottom-right-radius: 14px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+        }
+
+        .phone-statusbar {
+            height: 36px;
+            padding: 8px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            z-index: 20;
+        }
+
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .lock-screen {
+            flex: 1;
+            background: radial-gradient(circle at 30% 20%, #1e3a8a 0%, #0f172a 55%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 55px 22px 30px;
+            text-align: center;
+        }
+
+        .lock-time {
+            font-size: 62px;
+            font-weight: 200;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .lock-date {
+            font-size: 15px;
+            color: #cbd5e1;
+            margin-top: 8px;
+            text-transform: capitalize;
+        }
+
+        .lock-status-pill {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 12.5px;
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .alert-screen {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 25;
+            flex-direction: column;
+            padding: 42px 16px 20px;
+            background: #991b1b;
+            transition: background-color 0.2s;
+        }
+
+        .alert-screen.flashing {
+            animation: alertFlash 1s infinite;
+        }
+
+        @keyframes alertFlash {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.22); }
+        }
+
+        .alert-header-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .alert-triangle {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: white;
+            color: #b91c1c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .alert-header-text h2 {
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .alert-header-text p {
+            font-size: 11.5px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .alert-body-card {
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 16px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .alert-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #94a3b8;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+
+        .alert-title-display {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.3;
+        }
+
+        .alert-zone-tag {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .alert-message-display {
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: #f1f5f9;
+            white-space: pre-line;
+        }
+
+        .bypass-badge {
+            margin-top: auto;
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            color: #fde68a;
+            font-size: 11px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .alert-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-phone-ok {
+            background: white;
+            color: #0f172a;
+            border: none;
+            padding: 13px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .btn-phone-more {
+            background: rgba(0, 0, 0, 0.35);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .phone-details-modal {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: #0f172a;
+            z-index: 40;
+            padding: 46px 18px 20px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .phone-details-modal h3 {
+            font-size: 16px;
+            color: #93c5fd;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+
+        .details-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.55;
+            color: #e2e8f0;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="rf-badge">FR-ALERT</div>
+        <div>
+            <h1>Simulateur FR-Alert</h1>
+            <span>Diffusion cellulaire &bull; Ministère de l'Intérieur</span>
+        </div>
+    </div>
+    <div class="header-actions">
+        <button type="button" id="btn-open-about" class="btn-header">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>À propos</span>
+        </button>
+        <button type="button" id="btn-back-config" class="btn-header btn-back-config">&larr; Retour configuration</button>
+    </div>
+</header>
+
+<!-- ÉCRAN 1 : CONFIGURATION -->
+<main id="view-config" class="view-config">
+
+    <!-- 1. Scénarios préconfigurés -->
+    <section class="panel">
+        <div class="panel-title">1. Scénarios FR-Alert préconfigurés (accès rapide)</div>
+        <div class="scenarios-grid" id="scenarios-grid"></div>
+    </section>
+
+    <!-- 2. Sélection du risque et personnalisation -->
+    <section class="panel">
+        <div class="panel-title">2. Paramétrage du risque et du message officiel</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="input-risk-type">Type de risque</label>
+                <select id="input-risk-type"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="input-specific-risk">Risque spécifique</label>
+                <select id="input-specific-risk"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="input-level">Niveau d'alerte</label>
+                <select id="input-level">
+                    <option value="extreme">Alerte Extrême (Danger immédiat / Vital)</option>
+                    <option value="grave">Alerte Grave (Danger important)</option>
+                    <option value="avis">Avis / Vigilance (Information préventive)</option>
+                    <option value="exercice">Exercice / Test FR-Alert</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="input-authority">Autorité émettrice</label>
+                <input type="text" id="input-authority" value="Préfecture de Seine-et-Marne">
+            </div>
+
+            <div class="form-group">
+                <label for="input-title">Titre de la notification</label>
+                <input type="text" id="input-title" value="ALERTE INONDATION MAJEURE">
+            </div>
+
+            <div class="form-group">
+                <label for="input-zone">Zone géographique ciblée</label>
+                <input type="text" id="input-zone" value="Commune et alentours (rayon 5 km)">
+            </div>
+
+            <div class="form-group full">
+                <label for="input-message">Message officiel &amp; Conduite à tenir</label>
+                <textarea id="input-message"></textarea>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Paramètres du téléphone et déclenchement -->
+    <section class="panel">
+        <div class="panel-title">3. Simulation smartphone &amp; Déclenchement</div>
+        <div class="launch-bar">
+            <div class="launch-options">
+                <button type="button" id="btn-toggle-silent" class="silent-toggle is-silent">
+                    <span id="silent-icon">&#128263;</span>
+                    <span id="silent-label">Téléphone : Mode Silencieux ACTIF</span>
+                </button>
+
+                <div class="delay-wrapper">
+                    <span>Délai avant alerte :</span>
+                    <select id="select-delay">
+                        <option value="0">0 secondes (Immédiat)</option>
+                        <option value="5" selected>5 secondes</option>
+                        <option value="20">20 secondes</option>
+                        <option value="30">30 secondes</option>
+                        <option value="45">45 secondes</option>
+                        <option value="60">60 secondes</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="button" id="btn-start-sim" class="btn-start">
+                DÉMARRER LA SIMULATION
+            </button>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===================================================================== -->
+<!-- ÉCRAN À PROPOS / CRÉDITS & DROITS D'AUTEUR                            -->
+<!-- ===================================================================== -->
+<section id="screen-about" class="screen-about">
+    <div class="about-container">
+        <!-- En-tête -->
+        <div class="about-header">
+            <div class="about-icon-box">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>À propos</h2>
+                <p>Crédits &amp; Mentions pédagogiques</p>
+            </div>
+        </div>
+
+        <!-- Informations affichées -->
+        <div class="about-cards">
+            <!-- Carte Créateur -->
+            <div class="about-card">
+                <h3 class="title-red">Conception &amp; Formateur</h3>
+                <div>
+                    <p class="about-field-label">Auteur / Formateur</p>
+                    <p class="about-field-value-bold">Sylvian GONTHIER (Formateur PSC)</p>
+                </div>
+                <div>
+                    <p class="about-field-label">Établissement / Structure</p>
+                    <p class="about-field-value-semi">Collège René Barthélemy NANGIS (77)</p>
+                </div>
+                <div>
+                    <p class="about-field-label">Contact</p>
+                    <p class="about-field-value-semi">sylvian.gonthier@ac-creteil.fr</p>
+                </div>
+                <div>
+                    <p class="about-field-label">Contexte pédagogique</p>
+                    <p class="about-field-text">
+                        Outil de simulation hors-ligne conçu pour sensibiliser les élèves au système national d'alerte FR-Alert et aux conduites à tenir face aux risques majeurs.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Carte Droits d'auteur & Licence -->
+            <div class="about-card">
+                <h3 class="title-emerald">Droits d'auteur &amp; Licence</h3>
+                <p class="about-field-text">
+                    &copy; 2026 — Ressource pédagogique librement utilisable et adaptable en cadre éducatif (Licence Creative Commons CC BY-NC-SA 4.0).
+                </p>
+            </div>
+
+            <!-- Clause de non-affiliation -->
+            <div class="about-warning-card">
+                <strong>Avertissement :</strong> Cette application est un simulateur d'entraînement indépendant. Elle n'est pas affiliée officiellement au dispositif gouvernemental <em>FR-Alert</em> ni aux applications <em>SAUV Life</em> ou <em>Staying Alive</em> et ne déclenche aucun appel réel aux services de secours (15 / 17 / 18 / 112).
+            </div>
+        </div>
+
+        <!-- Bouton Retour -->
+        <div>
+            <button type="button" id="btn-about-return" class="btn-about-return">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Retour au simulateur</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ÉCRAN 2 : SMARTPHONE RÉCEPTEUR -->
+<section id="view-phone" class="view-phone">
+    <div id="countdown-banner" class="countdown-banner">
+        <span id="countdown-text">Déclenchement dans 5s...</span>
+        <button type="button" id="btn-cancel-timer" class="btn-cancel-timer">Annuler</button>
+    </div>
+
+    <div id="phone-frame" class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-statusbar">
+            <span id="status-time">12:00</span>
+            <div class="status-icons">
+                <span id="status-silent-badge">&#128263;</span>
+                <span>5G</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <div id="lock-screen" class="lock-screen">
+            <div>
+                <div id="lock-time" class="lock-time">12:00</div>
+                <div id="lock-date" class="lock-date">Lundi 23 novembre</div>
+            </div>
+            <div id="lock-status-pill" class="lock-status-pill">
+                Réseau mobile connecté &bull; En attente de diffusion
+            </div>
+        </div>
+
+        <div id="alert-screen" class="alert-screen">
+            <div class="alert-header-box">
+                <div class="alert-triangle">&#9888;</div>
+                <div class="alert-header-text">
+                    <h2 id="display-level-label">ALERTE EXTRÊME</h2>
+                    <p id="display-authority">Préfecture de Seine-et-Marne</p>
+                </div>
+            </div>
+
+            <div class="alert-body-card">
+                <div class="alert-meta">
+                    <span>FR-ALERT &bull; Cell Broadcast</span>
+                    <span id="display-alert-time">12:00</span>
+                </div>
+                <div id="display-title" class="alert-title-display">ALERTE INONDATION MAJEURE</div>
+                <div>
+                    <span id="display-zone" class="alert-zone-tag">&#128205; Commune et alentours</span>
+                </div>
+                <div id="display-message" class="alert-message-display"></div>
+
+                <div id="bypass-badge" class="bypass-badge">
+                    &#128276; Signal sonore prioritaire : contourne le mode Silencieux / Ne pas déranger
+                </div>
+            </div>
+
+            <div class="alert-actions">
+                <button type="button" id="btn-phone-ok" class="btn-phone-ok">Couper le son / J'ai compris</button>
+                <button type="button" id="btn-phone-more" class="btn-phone-more">En savoir plus / Consignes officielles</button>
+            </div>
+        </div>
+
+        <div id="phone-details-modal" class="phone-details-modal">
+            <h3>Consignes officielles &amp; Numéros d'urgence</h3>
+            <div id="details-content" class="details-content"></div>
+            <button type="button" id="btn-close-details" class="btn-phone-ok">Fermer la fiche</button>
+        </div>
+    </div>
+</section>
+
+<script>
+    const RISK_CATALOG = {
+        "Risques naturels": [
+            {
+                id: "inondations",
+                name: "Inondations",
+                level: "extreme",
+                title: "ALERTE INONDATION MAJEURE",
+                authority: "Préfecture — Service Interministériel de Défense et de Protection Civiles",
+                zone: "Secteurs riverains et zones inondables",
+                message: "Crues exceptionnelles en cours. Montez à l'étage ou sur un point haut, coupez l'électricité et le gaz, ne descendez pas dans les sous-sols et ne prenez pas votre voiture.",
+                details: "CONDUITE À TENIR INONDATION :\n• Réfugiez-vous en hauteur (étage, toit) sans attendre.\n• Coupez le gaz et l'électricité si l'eau menace les installations.\n• N'allez pas chercher vos enfants à l'école : ils sont pris en charge par les équipes pédagogiques.\n• Ne vous engagez jamais à pied ou en voiture sur une voie immergée.\n\nNuméros utiles : 18 (Pompiers) | 112 (Urgences)"
+            },
+            {
+                id: "tempetes",
+                name: "Tempêtes et cyclones",
+                level: "grave",
+                title: "ALERTE TEMPÊTE VIOLENTE",
+                authority: "Préfecture — Alerte Météorologique",
+                zone: "Ensemble du département",
+                message: "Rafales de vent destructrices attendues. Restez à l'abri dans un bâtiment en dur, fermez les volets, éloignez-vous des fenêtres et évitez tout déplacement.",
+                details: "CONDUITE À TENIR TEMPÊTE :\n• Mettez-vous à l'abri dans une construction solide.\n• Fermez volets, portes et fenêtres.\n• Éloignez-vous des baies vitrées.\n• Ne touchez jamais aux fils électriques tombés au sol.\n• Préparez une lampe de poche et une radio à piles."
+            },
+            {
+                id: "incendies",
+                name: "Incendies (feux de forêt)",
+                level: "extreme",
+                title: "ALERTE FEU DE FORÊT",
+                authority: "Préfecture — Commandement des Opérations de Secours",
+                zone: "Massifs forestiers et zones périurbaines exposées",
+                message: "Feu de forêt actif à proximité. Restez dans une habitation fermée (volets et aérations obstrués avec des linges humides) ou évacuez uniquement sur ordre des autorités.",
+                details: "CONDUITE À TENIR FEU DE FORÊT :\n• Une maison en maçonnerie reste votre meilleure protection : fermez volets, fenêtres et trappes d'aération.\n• Calfeutrez les bas de portes avec des linges mouillés.\n• Arrosez les abords de l'habitation si possible sans vous exposer.\n• N'évacuez en voiture que sur ordre explicite des forces de l'ordre."
+            },
+            {
+                id: "tsunamis",
+                name: "Tsunamis",
+                level: "extreme",
+                title: "ALERTE TSUNAMI IMMÉDIATE",
+                authority: "Centre d'Alerte aux Tsunamis (CENALT) / Préfecture",
+                zone: "Bande littorale et embouchures",
+                message: "Risque de vagues submersives majeures. Évacuez immédiatement le littoral et rejoignez à pied un point en hauteur (ou les étages supérieurs d'un bâtiment solide).",
+                details: "CONDUITE À TENIR TSUNAMI :\n• Éloignez-vous immédiatement du bord de mer et des plages.\n• Rejoignez à pied un point haut (au moins 15 m d'altitude) ou un bâtiment en béton au-delà du 3e étage.\n• N'utilisez pas votre véhicule (risque d'embouteillages mortels).\n• Attendez la fin officielle d'alerte avant de redescendre."
+            },
+            {
+                id: "volcans",
+                name: "Éruptions volcaniques",
+                level: "grave",
+                title: "ALERTE ÉRUPTION VOLCANIQUE",
+                authority: "Préfecture — Observatoire Volcanologique",
+                zone: "Périmètre volcanique et communes sous le vent",
+                message: "Activité éruptive dangereuse. Respectez les périmètres d'interdiction, protégez-vous des cendres (masque, lunettes, manches longues) et évacuez sur consigne préfectorale.",
+                details: "CONDUITE À TENIR ÉRUPTION VOLCANIQUE :\n• Respectez strictement les zones interdites d'accès.\n• Protégez vos voies respiratoires et vos yeux des retombées de cendres.\n• Nettoyez régulièrement les toitures pour éviter leur effondrement sous le poids des cendres.\n• Suivez les itinéraires d'évacuation balisés."
+            }
+        ],
+        "Risques technologiques et industriels": [
+            {
+                id: "industriel",
+                name: "Accidents industriels",
+                level: "extreme",
+                title: "ALERTE ACCIDENT INDUSTRIEL (SEVESO)",
+                authority: "Préfecture — Plan Particulier d'Intervention (PPI)",
+                zone: "Périmètre PPI autour de la zone industrielle",
+                message: "Rejet toxique sur un site industriel. Mettez-vous à l'abri dans le bâtiment le plus proche, fermez portes, fenêtres et ventilations, et ne fumez ni n'allumez de flamme.",
+                details: "CONDUITE À TENIR ACCIDENT INDUSTRIEL :\n• Rentrez immédiatement dans le bâtiment en dur le plus proche.\n• Coupez VMC, climatisation et chauffage à air pulsé.\n• Calfeutrez portes et fenêtres.\n• Interdiction absolue de fumer ou de produire une étincelle (risque d'explosion).\n• N'allez pas chercher vos enfants à l'école."
+            },
+            {
+                id: "telecom",
+                name: "Pannes de télécommunications",
+                level: "avis",
+                title: "AVIS — PANNE MAJEURE TÉLÉCOMS",
+                authority: "Préfecture — Centre Opérationnel Départemental",
+                zone: "Ensemble du territoire concerné",
+                message: "Perturbation grave des réseaux téléphoniques et internet. Écoutez la radio sur piles ou autoradio (France Info, France Bleu), limitez l'usage du téléphone et n'appelez les secours (112) qu'en cas d'urgence vitale.",
+                details: "CONDUITE À TENIR PANNE TÉLÉCOMS :\n• Utilisez un poste de radio à piles ou l'autoradio pour suivre les consignes officielles.\n• Économisez la batterie de votre smartphone.\n• Réservez le 112 aux seules urgences vitales."
+            },
+            {
+                id: "transport",
+                name: "Accidents graves de transport",
+                level: "grave",
+                title: "ALERTE ACCIDENT GRAVE DE TRANSPORT",
+                authority: "Préfecture — Direction des Sécurités",
+                zone: "Axe routier / ferroviaire concerné (rayon 2 km)",
+                message: "Accident grave impliquant un transport de matières dangereuses. Éloignez-vous de la zone de l'accident, facilitez l'accès aux secours et suivez les déviations ou consignes d'évacuation des forces de l'ordre.",
+                details: "CONDUITE À TENIR ACCIDENT TRANSPORT :\n• Dégagez immédiatement les axes d'accès pour les véhicules de secours.\n• Ne vous approchez pas pour filmer ou observer.\n• En cas de fumée suspecte, confinez-vous dans un bâtiment fermé."
+            }
+        ],
+        "Risques NRBCE": [
+            {
+                id: "nucleaire",
+                name: "Incidents nucléaires ou radiologiques",
+                level: "extreme",
+                title: "ALERTE NUCLÉAIRE — CONFINEMENT IMMÉDIAT",
+                authority: "Préfecture / Autorité de Sûreté Nucléaire",
+                zone: "Périmètre PPI autour de l'installation",
+                message: "Incident radiologique majeur. Confinez-vous immédiatement dans un bâtiment, calfeutrez les ouvertures, coupez la ventilation et attendez la consigne officielle avant de prendre de l'iode stable.",
+                details: "CONDUITE À TENIR RISQUE NUCLÉAIRE :\n• Mettez-vous à l'abri dans un bâtiment fermé et coupez toute ventilation.\n• Ne prenez des comprimés d'iode stable QUE sur ordre explicite du Préfet.\n• Écoutez France Info ou France Bleu.\n• Ne consommez pas d'eau du robinet ni d'aliments frais restés à l'extérieur."
+            },
+            {
+                id: "biologique",
+                name: "Incidents biologiques",
+                level: "grave",
+                title: "ALERTE SANITAIRE — RISQUE BIOLOGIQUE",
+                authority: "Préfecture / Agence Régionale de Santé (ARS)",
+                zone: "Zone sanitaire délimitée",
+                message: "Risque de contamination biologique identifié. Limitez les contacts physiques, appliquez les gestes barrières (masque, lavage des mains) et suivez les directives sanitaires des autorités.",
+                details: "CONDUITE À TENIR RISQUE BIOLOGIQUE :\n• Évitez tout rassemblement et limitez vos déplacements.\n• Portez un masque de protection et lavez-vous fréquemment les mains.\n• En cas de symptômes, ne vous rendez pas directement aux urgences : appelez le 15."
+            },
+            {
+                id: "chimique",
+                name: "Incidents chimiques (fuites de gaz, pollutions)",
+                level: "extreme",
+                title: "ALERTE CHIMIQUE — FUITE TOXIQUE",
+                authority: "Préfecture — Service Interministériel de Défense et de Protection Civiles",
+                zone: "Zone sous le panache chimique",
+                message: "Fuite de produit chimique toxique. Réfugiez-vous dans un bâtiment fermé en hauteur (les gaz lourds stagnant au sol), coupez l'aération et ne buvez pas l'eau du robinet sans autorisation.",
+                details: "CONDUITE À TENIR RISQUE CHIMIQUE :\n• Montez dans les étages d'un bâtiment fermé (évitez caves et rez-de-chaussée).\n• Coupez la ventilation et calfeutrez les ouvertures.\n• Ne buvez pas l'eau du réseau tant que sa potabilité n'est pas confirmée."
+            },
+            {
+                id: "explosif",
+                name: "Incidents explosifs",
+                level: "extreme",
+                title: "ALERTE DANGER D'EXPLOSION",
+                authority: "Préfecture — Forces de Sécurité Intérieure",
+                zone: "Périmètre de sécurité urbain",
+                message: "Risque d'explosion imminente. Éloignez-vous des vitres et façades, allongez-vous au sol en vous protégeant la tête en cas de déflagration et évacuez calmement sans utiliser les ascenseurs.",
+                details: "CONDUITE À TENIR RISQUE EXPLOSIF :\n• Éloignez-vous immédiatement des fenêtres, vitrines et façades.\n• En cas d'explosion, protégez votre tête et votre nuque au sol.\n• Évacuez par les escaliers uniquement, jamais par l'ascenseur."
+            }
+        ],
+        "Menaces sanitaires et de sécurité publique": [
+            {
+                id: "epidemies",
+                name: "Épidémies",
+                level: "avis",
+                title: "AVIS SANITAIRE — ALERTE ÉPIDÉMIQUE",
+                authority: "Ministère de la Santé / Préfecture",
+                zone: "Territoire régional",
+                message: "Circulation épidémique active. Respectez les mesures d'isolement ou de distanciation, portez un masque et consultez un médecin à distance en cas de symptômes.",
+                details: "CONDUITE À TENIR ÉPIDÉMIE :\n• Portez un masque dans les lieux clos et transports.\n• Respectez les consignes d'isolement en cas de test positif ou de symptômes.\n• Privilégiez la téléconsultation médicale."
+            },
+            {
+                id: "alimentaire",
+                name: "Crises alimentaires",
+                level: "avis",
+                title: "ALERTE SANITAIRE — RETRAIT ALIMENTAIRE",
+                authority: "Préfecture / Direction Départementale de la Protection des Populations",
+                zone: "Points de vente et foyers concernés",
+                message: "Alerte sanitaire sur un produit alimentaire contaminé. Cessez immédiatement de consommer les produits signalés, conservez l'emballage et consultez un médecin en cas de troubles.",
+                details: "CONDUITE À TENIR CRISE ALIMENTAIRE :\n• Ne consommez plus le produit concerné.\n• Conservez l'emballage ou le ticket de caisse pour traçabilité.\n• Consultez un médecin en mentionnant la consommation du lot signalé."
+            },
+            {
+                id: "attentat",
+                name: "Attentats ou événements graves",
+                level: "extreme",
+                title: "ALERTE ATTENTAT — DANGER IMMÉDIAT",
+                authority: "Préfecture de Police / Ministère de l'Intérieur",
+                zone: "Secteur de l'intervention en cours",
+                message: "Événement grave de sécurité publique en cours. Appliquez le réflexe « S'échapper, se cacher, alerter » : fuir le danger, sinon s'enfermer lumières éteintes et téléphone en silencieux (sans vibreur), puis alerter le 17 ou le 112.",
+                details: "RÉFLEXE ATTENTAT — S'ÉCHAPPER, SE CACHER, ALERTER :\n1. S'ÉCHAPPER : Éloignez-vous le plus vite possible de la zone de danger en aidant les autres si possible.\n2. SE CACHER : Si la fuite est impossible, enfermez-vous, barricadez la porte, éteignez les lumières et coupez sonnerie ET vibreur de votre téléphone.\n3. ALERTER : Une fois en sécurité, appelez le 17 ou le 112 (ou envoyez un SMS au 114)."
+            }
+        ]
+    };
+
+    const PRESET_SCENARIOS = [
+        {
+            id: "preset-inondation",
+            label: "Vigilance Rouge Inondations",
+            badge: "Extrême",
+            badgeClass: "badge-extreme",
+            desc: "Crues majeures, mise à l'abri en hauteur.",
+            type: "Risques naturels",
+            riskId: "inondations",
+            level: "extreme"
+        },
+        {
+            id: "preset-attentat",
+            label: "Alerte Attentat",
+            badge: "Extrême",
+            badgeClass: "badge-extreme",
+            desc: "Consignes S'échapper, se cacher, alerter.",
+            type: "Menaces sanitaires et de sécurité publique",
+            riskId: "attentat",
+            level: "extreme"
+        },
+        {
+            id: "preset-industriel",
+            label: "Accident industriel Seveso",
+            badge: "Extrême",
+            badgeClass: "badge-extreme",
+            desc: "Confinement bâtiment et coupure VMC.",
+            type: "Risques technologiques et industriels",
+            riskId: "industriel",
+            level: "extreme"
+        },
+        {
+            id: "preset-incendie",
+            label: "Incendie de forêt",
+            badge: "Extrême",
+            badgeClass: "badge-extreme",
+            desc: "Calfeutrage linges humides ou évacuation.",
+            type: "Risques naturels",
+            riskId: "incendies",
+            level: "extreme"
+        },
+        {
+            id: "preset-nucleaire",
+            label: "Incident nucléaire / Iode",
+            badge: "Extrême",
+            badgeClass: "badge-extreme",
+            desc: "Confinement radiologique et consigne iode.",
+            type: "Risques NRBCE",
+            riskId: "nucleaire",
+            level: "extreme"
+        },
+        {
+            id: "preset-exercice",
+            label: "Exercice / Test Préfecture",
+            badge: "Exercice",
+            badgeClass: "badge-exercice",
+            desc: "Test grandeur nature avec mention EXERCICE.",
+            type: "Risques technologiques et industriels",
+            riskId: "industriel",
+            level: "exercice"
+        }
+    ];
+
+    const LEVEL_STYLES = {
+        extreme: {
+            label: "ALERTE EXTRÊME",
+            bg: "#991b1b",
+            flash: true
+        },
+        grave: {
+            label: "ALERTE GRAVE",
+            bg: "#9a3412",
+            flash: true
+        },
+        avis: {
+            label: "AVIS / VIGILANCE",
+            bg: "#92400e",
+            flash: false
+        },
+        exercice: {
+            label: "EXERCICE FR-ALERT",
+            bg: "#065f46",
+            flash: false
+        }
+    };
+
+    let isSilentMode = true;
+    let countdownIntervalId = null;
+    let audioCtx = null;
+    let sirenIntervalId = null;
+    let currentDetailsText = "";
+
+    const viewConfig = document.getElementById("view-config");
+    const screenAbout = document.getElementById("screen-about");
+    const viewPhone = document.getElementById("view-phone");
+    const btnOpenAbout = document.getElementById("btn-open-about");
+    const btnAboutReturn = document.getElementById("btn-about-return");
+    const btnBackConfig = document.getElementById("btn-back-config");
+    const scenariosGrid = document.getElementById("scenarios-grid");
+    const selectRiskType = document.getElementById("input-risk-type");
+    const selectSpecificRisk = document.getElementById("input-specific-risk");
+    const selectLevel = document.getElementById("input-level");
+    const inputAuthority = document.getElementById("input-authority");
+    const inputTitle = document.getElementById("input-title");
+    const inputZone = document.getElementById("input-zone");
+    const inputMessage = document.getElementById("input-message");
+    const btnToggleSilent = document.getElementById("btn-toggle-silent");
+    const selectDelay = document.getElementById("select-delay");
+    const btnStartSim = document.getElementById("btn-start-sim");
+
+    const countdownBanner = document.getElementById("countdown-banner");
+    const countdownText = document.getElementById("countdown-text");
+    const btnCancelTimer = document.getElementById("btn-cancel-timer");
+    const phoneFrame = document.getElementById("phone-frame");
+    const lockScreen = document.getElementById("lock-screen");
+    const alertScreen = document.getElementById("alert-screen");
+    const phoneDetailsModal = document.getElementById("phone-details-modal");
+
+    // Navigation entre écrans
+    function showScreen(screenId) {
+        if (countdownIntervalId) {
+            clearInterval(countdownIntervalId);
+            countdownIntervalId = null;
+        }
+        stopSirenAudio();
+        countdownBanner.style.display = "none";
+
+        viewConfig.style.display = "none";
+        screenAbout.style.display = "none";
+        viewPhone.style.display = "none";
+        btnBackConfig.style.display = "none";
+        btnOpenAbout.style.display = "inline-flex";
+
+        if (screenId === "screen-config") {
+            viewConfig.style.display = "flex";
+        } else if (screenId === "screen-about") {
+            screenAbout.style.display = "flex";
+            btnOpenAbout.style.display = "none";
+            btnBackConfig.style.display = "inline-flex";
+        } else if (screenId === "screen-phone") {
+            viewPhone.style.display = "flex";
+            btnBackConfig.style.display = "inline-flex";
+        }
+    }
+
+    btnOpenAbout.addEventListener("click", () => showScreen("screen-about"));
+    btnAboutReturn.addEventListener("click", () => showScreen("screen-config"));
+    btnBackConfig.addEventListener("click", () => showScreen("screen-config"));
+    btnCancelTimer.addEventListener("click", () => showScreen("screen-config"));
+
+    function renderScenarios() {
+        scenariosGrid.innerHTML = "";
+        PRESET_SCENARIOS.forEach((sc, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "scenario-card" + (index === 0 ? " active" : "");
+            btn.dataset.presetId = sc.id;
+            btn.innerHTML = `
+                <div class="scenario-card-top">
+                    <span>${sc.label}</span>
+                    <span class="scenario-badge ${sc.badgeClass}">${sc.badge}</span>
+                </div>
+                <p>${sc.desc}</p>
+            `;
+            btn.addEventListener("click", () => applyPresetScenario(sc));
+            scenariosGrid.appendChild(btn);
+        });
+    }
+
+    function applyPresetScenario(preset) {
+        document.querySelectorAll(".scenario-card").forEach(c => {
+            c.classList.toggle("active", c.dataset.presetId === preset.id);
+        });
+        selectRiskType.value = preset.type;
+        populateSpecificRisks(preset.type, preset.riskId);
+        selectLevel.value = preset.level;
+    }
+
+    function populateRiskTypes() {
+        selectRiskType.innerHTML = "";
+        Object.keys(RISK_CATALOG).forEach(type => {
+            const opt = document.createElement("option");
+            opt.value = type;
+            opt.textContent = type;
+            selectRiskType.appendChild(opt);
+        });
+    }
+
+    function populateSpecificRisks(type, selectedRiskId = null) {
+        const risks = RISK_CATALOG[type] || [];
+        selectSpecificRisk.innerHTML = "";
+        risks.forEach(risk => {
+            const opt = document.createElement("option");
+            opt.value = risk.id;
+            opt.textContent = risk.name;
+            selectSpecificRisk.appendChild(opt);
+        });
+        if (selectedRiskId) {
+            selectSpecificRisk.value = selectedRiskId;
+        }
+        applySpecificRiskData();
+    }
+
+    function applySpecificRiskData() {
+        const type = selectRiskType.value;
+        const riskId = selectSpecificRisk.value;
+        const riskObj = (RISK_CATALOG[type] || []).find(r => r.id === riskId);
+        if (!riskObj) return;
+
+        selectLevel.value = riskObj.level;
+        inputAuthority.value = riskObj.authority;
+        inputTitle.value = riskObj.title;
+        inputZone.value = riskObj.zone;
+        inputMessage.value = riskObj.message;
+        currentDetailsText = riskObj.details;
+    }
+
+    selectRiskType.addEventListener("change", () => {
+        document.querySelectorAll(".scenario-card").forEach(c => c.classList.remove("active"));
+        populateSpecificRisks(selectRiskType.value);
+    });
+
+    selectSpecificRisk.addEventListener("change", () => {
+        document.querySelectorAll(".scenario-card").forEach(c => c.classList.remove("active"));
+        applySpecificRiskData();
+    });
+
+    btnToggleSilent.addEventListener("click", () => {
+        isSilentMode = !isSilentMode;
+        btnToggleSilent.classList.toggle("is-silent", isSilentMode);
+        document.getElementById("silent-icon").innerHTML = isSilentMode ? "&#128263;" : "&#128276;";
+        document.getElementById("silent-label").textContent = isSilentMode
+            ? "Téléphone : Mode Silencieux ACTIF"
+            : "Téléphone : Sonnerie NORMALE";
+        document.getElementById("status-silent-badge").innerHTML = isSilentMode ? "&#128263;" : "&#128276;";
+    });
+
+    function updateClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const timeStr = `${hh}:${mm}`;
+        document.getElementById("status-time").textContent = timeStr;
+        document.getElementById("lock-time").textContent = timeStr;
+
+        const dateStr = now.toLocaleDateString("fr-FR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long"
+        });
+        document.getElementById("lock-date").textContent = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function unlockAudio() {
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!audioCtx && AudioContextClass) {
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === "suspended") {
+                audioCtx.resume();
+            }
+        } catch (e) {
+            console.warn("Audio non disponible :", e);
+        }
+    }
+
+    function playSingleAlertBurst() {
+        if (!audioCtx) return;
+        try {
+            const now = audioCtx.currentTime;
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc1.type = "sine";
+            osc2.type = "sine";
+            osc1.frequency.setValueAtTime(853, now);
+            osc2.frequency.setValueAtTime(960, now);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + 0.04);
+            gain.gain.setValueAtTime(0.18, now + 0.75);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.86);
+            osc2.stop(now + 0.86);
+        } catch (e) {}
+    }
+
+    function startSirenAudio() {
+        stopSirenAudio();
+        unlockAudio();
+        playSingleAlertBurst();
+        sirenIntervalId = setInterval(playSingleAlertBurst, 1250);
+    }
+
+    function stopSirenAudio() {
+        if (sirenIntervalId) {
+            clearInterval(sirenIntervalId);
+            sirenIntervalId = null;
+        }
+        phoneFrame.classList.remove("vibrating");
+        alertScreen.classList.remove("flashing");
+    }
+
+    function triggerFRAlert() {
+        const levelKey = selectLevel.value;
+        const style = LEVEL_STYLES[levelKey] || LEVEL_STYLES.extreme;
+
+        document.getElementById("display-level-label").textContent = style.label;
+        document.getElementById("display-authority").textContent = inputAuthority.value.trim() || "Préfecture";
+        document.getElementById("display-title").textContent = inputTitle.value.trim() || "ALERTE FR-ALERT";
+        document.getElementById("display-zone").innerHTML = "&#128205; " + (inputZone.value.trim() || "Zone ciblée");
+
+        let msg = inputMessage.value.trim();
+        if (levelKey === "exercice") {
+            msg = "EXERCICE - EXERCICE - EXERCICE\n\n" + msg + "\n\nEXERCICE - EXERCICE - EXERCICE";
+        }
+        document.getElementById("display-message").textContent = msg;
+
+        const now = new Date();
+        document.getElementById("display-alert-time").textContent =
+            String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+
+        document.getElementById("bypass-badge").style.display = isSilentMode ? "block" : "none";
+
+        alertScreen.style.backgroundColor = style.bg;
+        alertScreen.style.display = "flex";
+        lockScreen.style.display = "none";
+        phoneDetailsModal.style.display = "none";
+
+        if (style.flash) {
+            alertScreen.classList.add("flashing");
+        }
+        phoneFrame.classList.add("vibrating");
+        startSirenAudio();
+    }
+
+    btnStartSim.addEventListener("click", () => {
+        unlockAudio();
+        const delaySec = parseInt(selectDelay.value, 10) || 0;
+
+        showScreen("screen-phone");
+        alertScreen.style.display = "none";
+        phoneDetailsModal.style.display = "none";
+        lockScreen.style.display = "flex";
+
+        if (delaySec === 0) {
+            countdownBanner.style.display = "none";
+            triggerFRAlert();
+        } else {
+            let remaining = delaySec;
+            countdownBanner.style.display = "flex";
+            countdownText.textContent = `Simulation en cours — Alerte dans ${remaining}s...`;
+            document.getElementById("lock-status-pill").textContent =
+                `Simulation active • Réception dans ${remaining}s`;
+
+            countdownIntervalId = setInterval(() => {
+                remaining -= 1;
+                if (remaining > 0) {
+                    countdownText.textContent = `Simulation en cours — Alerte dans ${remaining}s...`;
+                    document.getElementById("lock-status-pill").textContent =
+                        `Simulation active • Réception dans ${remaining}s`;
+                } else {
+                    clearInterval(countdownIntervalId);
+                    countdownIntervalId = null;
+                    countdownBanner.style.display = "none";
+                    triggerFRAlert();
+                }
+            }, 1000);
+        }
+    });
+
+    document.getElementById("btn-phone-ok").addEventListener("click", () => {
+        stopSirenAudio();
+    });
+
+    document.getElementById("btn-phone-more").addEventListener("click", () => {
+        stopSirenAudio();
+        document.getElementById("details-content").textContent = currentDetailsText;
+        phoneDetailsModal.style.display = "flex";
+    });
+
+    document.getElementById("btn-close-details").addEventListener("click", () => {
+        phoneDetailsModal.style.display = "none";
+    });
+
+    populateRiskTypes();
+    renderScenarios();
+    applyPresetScenario(PRESET_SCENARIOS[0]);
+</script>
+</body>
+</html>
